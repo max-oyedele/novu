@@ -1,6 +1,6 @@
 import { Accessor, createContext, createEffect, createSignal, ParentProps, useContext } from 'solid-js';
 import { NotificationFilter } from '../../types';
-import { NotificationStatus, Tab } from '../types';
+import { NotificationStatus, RouterPush, Tab } from '../types';
 
 type InboxContextType = {
   setStatus: (status: NotificationStatus) => void;
@@ -11,6 +11,7 @@ type InboxContextType = {
   tabs: Accessor<Array<Tab>>;
   activeTab: Accessor<string>;
   setActiveTab: (tab: string) => void;
+  navigate: (path: string) => void;
 };
 
 const InboxContext = createContext<InboxContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ export const DEFAULT_LIMIT = 10;
 
 type InboxProviderProps = ParentProps<{
   tabs: Array<Tab>;
+  routerPush?: RouterPush;
 }>;
 
 export const InboxProvider = (props: InboxProviderProps) => {
@@ -52,6 +54,18 @@ export const InboxProvider = (props: InboxProviderProps) => {
     setFilter((old) => ({ ...old, tags }));
   };
 
+  const navigate = (path: string) => {
+    if (props.routerPush) {
+      props.routerPush(path);
+
+      return;
+    }
+
+    const url = new URL(path, window.location.href);
+    const pushState = window.history.pushState.bind(window.history);
+    pushState({}, '', url);
+  };
+
   createEffect(() => {
     setTabs(props.tabs);
     const firstTab = props.tabs[0];
@@ -70,6 +84,7 @@ export const InboxProvider = (props: InboxProviderProps) => {
         setActiveTab: setNewActiveTab,
         limit,
         setLimit,
+        navigate,
       }}
     >
       {props.children}
